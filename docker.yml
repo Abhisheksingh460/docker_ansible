@@ -1,0 +1,73 @@
+- hosts: all
+  tasks: 
+  - name: "creating directory"
+    file: 
+      state: "directory"
+      path: "/dvd1"
+
+  - name: "mount cdrom"
+    mount:
+      src: "/dev/cdrom"
+      path: "/dvd1"
+      state: mounted
+      fstype: "iso9660"
+
+  - name: "configuring AppStream yum repository"
+    yum_repository:
+      baseurl: "/dvd1/AppStream"
+      name: "mydvd1"
+      description: "my base yum repo1"
+      gpgcheck: no
+   
+  - name: "configuring BaseOS yum repository"
+    yum_repository:
+      baseurl: "/dvd1/BaseOS"
+      name: "mydvd2"
+      description: "my base yum repo2"
+      gpgcheck: no
+  
+  - name: "configuring docker yum repository"
+    yum_repository:
+      baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+      name: "docker"
+      description: "docker repo "
+      gpgcheck: no
+
+  - name: "installing docker-ce"
+    package:
+      name: "docker-ce-18.09.1-3.el7.x86_64"
+      state: present
+
+  - name: "docker enabling"
+    service: 
+      name: "docker"
+      state: started
+      enabled: yes
+
+  - name: "Docker python library"
+    pip: 
+      name: "docker-py"
+
+  - name: "pulling docker image"
+    docker_image:
+      name: httpd
+      source: pull
+ 
+  - name: "creating workspace on managed node"
+    file: 
+      path: "/ansiblecontent"
+      state: directory
+
+  - name: "copying content into managed node"
+    copy:
+      dest: "/ansiblecontent/"
+      src: "abhi.html"
+
+  - name: "creating docker container"
+    docker_container:
+      name:  myweb1
+      image: httpd
+      state: started
+      exposed_ports: "80"
+      published_ports: "8080:80" 
+      volumes: /ansiblecontent:/usr/local/apache2/htdocs/
